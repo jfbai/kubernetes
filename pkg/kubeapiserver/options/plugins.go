@@ -59,6 +59,7 @@ import (
 	"k8s.io/kubernetes/pkg/features"
 )
 
+// 定义 admission plugin 调用顺序
 // AllOrderedPlugins is the list of all the plugins in order.
 var AllOrderedPlugins = []string{
 	admit.PluginName,                        // AlwaysAdmit
@@ -95,6 +96,15 @@ var AllOrderedPlugins = []string{
 	deny.PluginName,                         // AlwaysDeny
 }
 
+// 注册 admission plugins，admission.Plugins 有一个 map[string]Factory 成员，
+// string 是 PluginName，Factory 是 signature 为 func(config io.Reader) (admission.Interface, error) 的方法，
+// 每一个 admission plugin 都要实现这个样子的方法，返回 plugin 实例，这个实例是接口 admission.Interface 的实现，
+// 接口 admission.Interface 包含方法 Handles(operation Operation) bool，然后还有两个扩展的接口，分别是
+// MutationInterface
+//   Admit(ctx context.Context, a Attributes, o ObjectInterfaces) (err error)
+// ValidationInterface
+//   Validate(ctx context.Context, a Attributes, o ObjectInterfaces) (err error)
+// admission plugin 不需要实现以上全部接口
 // RegisterAllAdmissionPlugins registers all admission plugins and
 // sets the recommended plugins order.
 func RegisterAllAdmissionPlugins(plugins *admission.Plugins) {
@@ -128,6 +138,8 @@ func RegisterAllAdmissionPlugins(plugins *admission.Plugins) {
 	storageobjectinuseprotection.Register(plugins)
 }
 
+// 定义默认开启的 admission plugins，官方文档里有提到，跟这些一一对应，
+// https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/
 // DefaultOffAdmissionPlugins get admission plugins off by default for kube-apiserver.
 func DefaultOffAdmissionPlugins() sets.String {
 	defaultOnPlugins := sets.NewString(
