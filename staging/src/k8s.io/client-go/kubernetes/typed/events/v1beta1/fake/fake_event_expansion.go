@@ -17,8 +17,11 @@ limitations under the License.
 package fake
 
 import (
-	v1beta1 "k8s.io/api/events/v1beta1"
-	types "k8s.io/apimachinery/pkg/types"
+	"k8s.io/api/events/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	core "k8s.io/client-go/testing"
 )
 
@@ -63,4 +66,27 @@ func (c *FakeEvents) PatchWithEventNamespace(event *v1beta1.Event, data []byte) 
 	}
 
 	return obj.(*v1beta1.Event), err
+}
+
+// Search returns a list of events matching the specified object.
+func (c *FakeEvents) Search(scheme *runtime.Scheme, objOrRef runtime.Object) (*v1beta1.EventList, error) {
+	action := core.NewRootListAction(eventsResource, eventsKind, metav1.ListOptions{})
+	if c.ns != "" {
+		action = core.NewListAction(eventsResource, eventsKind, c.ns, metav1.ListOptions{})
+	}
+	obj, err := c.Fake.Invokes(action, &v1beta1.EventList{})
+	if obj == nil {
+		return nil, err
+	}
+
+	return obj.(*v1beta1.EventList), err
+}
+
+func (c *FakeEvents) GetFieldSelector(involvedObjectName, involvedObjectNamespace, involvedObjectKind, involvedObjectUID *string) fields.Selector {
+	action := core.GenericActionImpl{}
+	action.Verb = "get-field-selector"
+	action.Resource = eventsResource
+
+	c.Fake.Invokes(action, nil)
+	return fields.Everything()
 }
